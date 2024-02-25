@@ -39,13 +39,13 @@ function cuArrayRankSort(a::Array{Float64, 1})
   for i in 1:n
     CUDA.@allowscalar temp_gpu[1:n] .= a_gpu[i] .> a_gpu[1:n]
     # sum of 1s in temp_gpu
-    idx = sum(Array(temp_gpu))
+    idx = CUDA.reduce(+, temp_gpu)
     sorted[idx+1] = a[i]
   end
   return sorted
 end
 
-(a, sorted) = generateArray(2^16)
+(a, sorted) = generateArray(500)
 
 c = @btime cuArrayRankSort(a)
 d = @btime sequentialRankSort(a)
