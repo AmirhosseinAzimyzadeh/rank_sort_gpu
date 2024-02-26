@@ -52,10 +52,11 @@ function rankSortKernel!(
   chunk_size, # chuck size assigned to each thread
   n # size of the array
 )
+  i = (blockIdx().x - 1) * blockDim().x + threadIdx().x
   # Min and Max index of the chunk
-  min_idx = (CUDA.threadIdx().x + (CUDA.blockIdx().x - 1) * blockDim) * chunk_size
-  max_idx = min(min_idx + chunk_size, n)
-  min_idx += 1 # 1-based indexing
+  min_idx = (i - 1) * chunk_size + 1
+  max_idx = min_idx + chunk_size - 1
+  max_idx > n && (max_idx = n)
 
   for i in min_idx:max_idx
     idx = 0
@@ -67,17 +68,15 @@ function rankSortKernel!(
   return nothing
 end
 
-function cuNativeRankSort(a::Array{Float64, 1}, chunck_size::Int64 = 128)
+function cuNativeRankSort(a::Array{Float64, 1}, chunck_size::Int64 = 2)
   n = length(a)
   a_gpu = CuArray(a)
   sorted_gpu = similar(a_gpu)
+  number_of_blocks = ceil(Int, n / chunck_size)
+  number_of_threads = 1024
 
-  # call the kernel
+  @cuda blocks=number_of_threads threads=number_of_threads rankSortKernel!(a_gpu, sorted_gpu, chunck_size, n)
 
-  @show ceil(Int, n / chunck_size)
-
-  @cuda blocks=cld(n, 512) threads=512 rankSortKernel!(a_gpu, sorted_gpu, chunck_size, n)
-  # CUDA.@sync()
   return Array(sorted_gpu)
 end
 
@@ -108,4 +107,14 @@ d = @btime sequentialRankSort(a)
 
 # ------------
 
-# chunk size = 8
+# chunk size = 4
+# 1 device:
+#   0: NVIDIA GeForce GTX 950M (sm_50, 3.314 GiB / 4.000 GiB available)
+# CUDA.functional() = true
+#   288.529 ms (15 allocations: 512.59 KiB)
+# checkSorted(b, sorted) = true
+#   92.298 s (4988427 allocations: 201.43 MiB)
+# checkSorted(c, sorted) = true
+#   726.345 ms (2 allocations: 512.05 KiB)
+# checkSorted(d, sorted) = true
+# true
