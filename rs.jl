@@ -4,6 +4,9 @@ using BenchmarkTools
 CUDA.versioninfo()
 @show CUDA.functional()
 
+cu_device = CUDA.device()
+max_threads = CUDA.attribute(cu_device, CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)
+
 # Generate an array in random order and return the array and its sorted version
 # Using for testing purposes
 function generateArray(n::Int64)
@@ -68,27 +71,26 @@ function rankSortKernel!(
   return nothing
 end
 
-function cuNativeRankSort(a::Array{Float64, 1}, chunck_size::Int64 = 2)
+function cuNativeRankSort(a::Array{Float64, 1}, chunck_size::Int64 = 4)
   n = length(a)
   a_gpu = CuArray(a)
   sorted_gpu = similar(a_gpu)
   number_of_blocks = ceil(Int, n / chunck_size)
-  number_of_threads = 1024
 
-  @cuda blocks=number_of_threads threads=number_of_threads rankSortKernel!(a_gpu, sorted_gpu, chunck_size, n)
+  @cuda blocks=number_of_blocks threads=max_threads rankSortKernel!(a_gpu, sorted_gpu, chunck_size, n)
 
   return Array(sorted_gpu)
 end
 
 
 
-(a, sorted) = generateArray(2^16)
+(a, sorted) = generateArray(2^17)
 
 b = @btime cuNativeRankSort(a)
 @show checkSorted(b, sorted)
 
-c = @btime cuArrayRankSort(a)
-@show checkSorted(c, sorted)
+# c = @btime cuArrayRankSort(a)
+# @show checkSorted(c, sorted)
 
 d = @btime sequentialRankSort(a)
 @show checkSorted(d, sorted)
