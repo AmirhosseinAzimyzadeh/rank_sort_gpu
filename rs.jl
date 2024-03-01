@@ -110,7 +110,7 @@ d = @btime sequentialRankSort(a);
 @show checkSorted(d, sorted)
 
 # ---- 2^18 ----
-(a, sorted) = generateArray(2^32)
+(a, sorted) = generateArray(2^18)
 
 println("chunk size = 4")
 b = @btime cuNativeRankSort(a, 4);
