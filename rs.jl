@@ -11,7 +11,7 @@ max_threads = CUDA.attribute(cu_device, CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BL
 # Using for testing purposes
 function generateArray(n::Int64)
   a = rand(n)
-  return a, sort(a)
+  return (a, sort(a))
 end
 
 # Check the validity of sorted array
@@ -71,7 +71,7 @@ function rankSortKernel!(
   return nothing
 end
 
-function cuNativeRankSort(a::Array{Float64, 1}, chunck_size::Int64 = 4)
+function cuNativeRankSort(a::Array{Float64, 1}, chunck_size::Int64)
   n = length(a)
   a_gpu = CuArray(a)
   sorted_gpu = similar(a_gpu)
@@ -84,39 +84,54 @@ end
 
 
 
-(a, sorted) = generateArray(2^17)
+# ---- 2^16 ----
+(a, sorted) = generateArray(2^16)
 
-b = @btime cuNativeRankSort(a)
+println("chunk size = 4")
+b = @btime cuNativeRankSort(a, 4);
 @show checkSorted(b, sorted)
 
-# c = @btime cuArrayRankSort(a)
-# @show checkSorted(c, sorted)
+println("chunk size = 16")
+b = @btime cuNativeRankSort(a, 16);
+@show checkSorted(b, sorted)
 
-d = @btime sequentialRankSort(a)
+println("chunk size = 64")
+b = @btime cuNativeRankSort(a, 64);
+@show checkSorted(b, sorted)
+
+println("chunk size = 128")
+b = @btime cuNativeRankSort(a, 128);
+@show checkSorted(b, sorted)
+
+c = @btime cuArrayRankSort(a);
+@show checkSorted(c, sorted)
+
+d = @btime sequentialRankSort(a);
 @show checkSorted(d, sorted)
 
-# chunk size = 128
-# 1 device:
-#   0: NVIDIA GeForce GTX 950M (sm_50, 3.325 GiB / 4.000 GiB available)
-# CUDA.functional() = true
-#   1.145 s (15 allocations: 512.59 KiB)
-# checkSorted(b, sorted) = true
-#   92.604 s (4987894 allocations: 201.42 MiB)
-# checkSorted(c, sorted) = true
-#   727.133 ms (2 allocations: 512.05 KiB)
-# checkSorted(d, sorted) = true
-# true
+# ---- 2^18 ----
+(a, sorted) = generateArray(2^32)
 
-# ------------
+println("chunk size = 4")
+b = @btime cuNativeRankSort(a, 4);
+@show checkSorted(b, sorted)
 
-# chunk size = 4
-# 1 device:
-#   0: NVIDIA GeForce GTX 950M (sm_50, 3.314 GiB / 4.000 GiB available)
-# CUDA.functional() = true
-#   288.529 ms (15 allocations: 512.59 KiB)
-# checkSorted(b, sorted) = true
-#   92.298 s (4988427 allocations: 201.43 MiB)
-# checkSorted(c, sorted) = true
-#   726.345 ms (2 allocations: 512.05 KiB)
-# checkSorted(d, sorted) = true
-# true
+println("chunk size = 16")
+b = @btime cuNativeRankSort(a, 16);
+@show checkSorted(b, sorted)
+
+println("chunk size = 64")
+b = @btime cuNativeRankSort(a, 64);
+@show checkSorted(b, sorted)
+
+println("chunk size = 128")
+b = @btime cuNativeRankSort(a, 128);
+@show checkSorted(b, sorted)
+
+c = @btime cuArrayRankSort(a);
+@show checkSorted(c, sorted)
+
+d = @btime sequentialRankSort(a);
+@show checkSorted(d, sorted)
+
+
