@@ -8,7 +8,7 @@ cu_device = CUDA.device()
 max_threads = CUDA.attribute(cu_device, CUDA.DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK)
 
 # Generate an array in random order and return the array and its sorted version
-# Using for testing purposes
+# Used for testing purposes
 function generateArray(n::Int64)
   a = rand(n)
   return (a, sort(a))
